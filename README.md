@@ -1,2 +1,10 @@
-# whoisusingmygpu
-Protip: just use Slurm instead
+# Who is using my GPU!?
+
+
+```
+docker compose build
+```
+
+```
+docker compose up
+```

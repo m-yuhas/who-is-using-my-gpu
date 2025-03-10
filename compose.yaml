@@ -1,0 +1,7 @@
+services:
+  monitor:
+    image: gpu-monitor
+    ports:
+      - 5069:5000
+    build:
+      context: ./monitor
