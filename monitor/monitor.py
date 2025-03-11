@@ -4,7 +4,7 @@ import json
 from flask import Flask
 
 
-from gpu_stats import get_cuda_stats
+from gpu_stats import get_cuda_gpus, get_cuda_procs
 
 
 app = Flask(__name__)
@@ -24,9 +24,11 @@ def get_gpu_stats():
     """
     stats = {'gpus': [], 'procs': [], 'errors': []}
     try:
-        cuda_gpus, cuda_procs = get_cuda_stats()
-        stats['gpus'].extend(cuda_gpus)
-        stats['procs'].extend(cuda_procs)
+        stats['gpus'].extend(get_cuda_gpus())
     except Exception as err:
-        stats['errors'].append(f'{type(err)}: {err}')
+        stats['errors'].append(f'{type(err).__name__}: {err}')
+    try:
+        stats['procs'].extend(get_cuda_procs())
+    except Exception as err:
+        stats['errors'].append(f'{type(err).__name__}: {err}')
     return json.dumps(stats)

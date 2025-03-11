@@ -1,7 +1,13 @@
 services:
   monitor:
     image: gpu-monitor
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
     ports:
       - 5069:5000
+    volumes:
+      - /proc:/proc
+      - /etc:/etc
     build:
       context: ./monitor
