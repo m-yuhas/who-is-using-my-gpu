@@ -11,6 +11,6 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-CMD [ "flask", "--app", "monitor", "run", "--host=0.0.0.0"]
+CMD [ "flask", "--app", "monitor", "run", "--host=0.0.0.0" ]
 
 # TODO: Parameterize CUDA Driver Version

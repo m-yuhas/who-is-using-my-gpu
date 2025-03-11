@@ -1,3 +1,6 @@
+from typing import Dict, List
+
+
 import argparse
 import datetime
 import json
@@ -11,6 +14,9 @@ import requests
 import yaml
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 def long_sleep(t: int) -> None:
     """Accurately sleep for a long time.
 
@@ -20,10 +26,18 @@ def long_sleep(t: int) -> None:
     end = time.time() + t * 60
     rest = t * 60 // 2
     while time.time() < end and rest > 0:
-        logger.debug(f'Sleeping for {rest} seconds...')
+        LOGGER.debug(f'Sleeping for {rest} seconds...')
         time.sleep(rest)
         rest = (end - time.time()) // 2
-        
+
+
+def send_to_database(data: List[Dict]) -> None:
+    CONNECTION_STRING = 'mongodb+srv://user:pass@ipaddr/gpuUtilization'
+    client = pymongo.MongoClient(CONNECTION_STRING)
+    dbname = client['gpuUtilization']
+    collection_name = dbname['utilization']
+    collection_name.insert_many(data)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -43,29 +57,37 @@ if __name__ == '__main__':
              'allowing new GPUs to join the fleet without needing to restart '
              'the service.'
     )
+    parser.add_argument(
+        '--verbosity',
+        default='info',
+        choices=['debug', 'info', 'warning', 'error', 'critical'],
+        help='Logging level.'
+    )
     args = parser.parse_args()
-
-    logger = logging.getLogger(__name__)
-    coloredlogs.install(level='DEBUG')
-
+    coloredlogs.install(level=args.verbosity.upper())
     while True:
-        logger.info('Reading host list...')
+        LOGGER.info('Reading host list...')
         hosts = {}
         try:
             with open(args.hosts, 'r') as host_f:
                 hosts = yaml.safe_load(host_f.read())
         except Exception as err:
-            logger.error(f'{type(err).__name__} occurred!')
-            logger.error(f'{err}')
+            LOGGER.error(f'{type(err).__name__} occurred loading host list!')
+            LOGGER.error(f'{err}')
 
         for host, address in hosts.items():
-            logger.info(f'Probing {host}@{address}...')
-            response = requests.get(f'http://{address}')
-            logger.debug(response.json())
+            LOGGER.info(f'Probing {host}@{address}...')
+            try:
+                response = requests.get(f'http://{address}')
+                LOGGER.debug('Obtained response from host:') 
+                LOGGER.debug(response.json())
+            except Exception as err:
+                LOGGER.error(f'{type(err).__name__} occurred probing {address}')
+                LOGGER.error(f'{err}')
 
 
             # Add results to mongo
 
-        logger.info('Going to sleep...')
+        LOGGER.info('Going to sleep...')
         long_sleep(args.period)
 

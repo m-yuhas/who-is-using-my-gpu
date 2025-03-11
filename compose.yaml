@@ -11,3 +11,20 @@ services:
       - /etc:/etc
     build:
       context: ./monitor
+  coordinator:
+    image: gpu-coordinator
+    environment:
+      - GPU_LIST=hosts.yaml
+      - PROBE_PERIOD=60
+      - VERBOSITY=debug
+    build:
+      context: ./coordinator
+      args:
+        GPU_LIST: hosts.yaml
+  mongodb:
+    image: mongodb/mongodb-community-server:6.0-ubi8
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    volumes:
+      - data:/data/db

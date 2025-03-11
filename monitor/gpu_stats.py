@@ -9,21 +9,13 @@ def get_cuda_gpus() -> List[Dict[str, Union[int, str]]]:
     """Get stastics on all CUDA GPUs in the system.
 
     Returns:
-        List of detected CUDA gpus on the system.  Each entry
-        in the list is a dictionary with the following information: GPU ID
-        (id), product name (type), current fan speed as a percentage of
-        maximum (fan_speed), current temperature in Celcius (temperature),
-        performance mode (mode), power usage in Watts (power_used), maximum
-        possible power usage in Watts (power_available), memory usage in MiB
-        (memory_used), total GPU memory in MiB (memory_available), and
-        utilization as a percentage of cycles (utilization).
-
-        ```procs``` is a list of processes currently running on the GPU.  Each
-        entry is a dictionary with the following information: GPU ID (gpu),
-        username of the process owner (owner), process type (type) with
-        possible values 'C' for compute or 'G' for graphics, process name as
-        reported by nvidia-smi (name), the command used to launch the process
-        (command), and the memory used by the process in MiB (memory).
+        List of detected CUDA gpus on the system.  Each entry in the list is a
+        dictionary with the following information: GPU ID (id), product name
+        (type), current fan speed as a percentage of maximum (fan_speed),
+        current temperature in Celcius (temperature), performance mode (mode),
+        power usage in mW (power_used), maximum possible power usage in mW
+        (power_total), memory usage in bytes (memory_used), and total GPU
+        memory in bytes (memory_total).
     """
     pynvml.nvmlInit()
     gpus = []
@@ -44,6 +36,16 @@ def get_cuda_gpus() -> List[Dict[str, Union[int, str]]]:
 
 
 def get_cuda_procs() -> List[Dict[str, Union[int, str]]]:
+    """Get statistics on all processes running on CUDA GPUs.
+
+    Returns:
+        List of processes currently running on the GPU.  Each entry is a
+        dictionary with the following information: GPU ID (gpu), username of
+        the process owner (owner), process type (type) with possible values
+        'compute' or 'graphics', process name (name), the command used to
+        launch the process (command), and the memory used by the process in
+        bytes (memory).
+    """
     pynvml.nvmlInit()
     procs = []
     for gpu_id in range(pynvml.nvmlDeviceGetCount()):
@@ -60,4 +62,3 @@ def get_cuda_procs() -> List[Dict[str, Union[int, str]]]:
             info['command'] = ' '.join(os_proc.cmdline())
             procs.append(info)
     return procs
-
