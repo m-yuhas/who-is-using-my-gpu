@@ -1,2 +1,4 @@
+coloredlogs
+pyyaml
 pymongo
 requests

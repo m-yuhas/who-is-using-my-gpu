@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD [ "python", "coordinator.py" ]
+CMD [ "python", "coordinator.py", "--period", "60", "--hosts", "" ]
