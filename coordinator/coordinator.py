@@ -5,6 +5,7 @@ import argparse
 import datetime
 import json
 import logging
+import socket
 import time
 
 
@@ -31,12 +32,18 @@ def long_sleep(t: int) -> None:
         rest = (end - time.time()) // 2
 
 
-def send_to_database(data: List[Dict]) -> None:
-    CONNECTION_STRING = 'mongodb+srv://user:pass@ipaddr/gpuUtilization'
-    client = pymongo.MongoClient(CONNECTION_STRING)
-    dbname = client['gpuUtilization']
-    collection_name = dbname['utilization']
-    collection_name.insert_many(data)
+def send_to_graphite(metric: str, data: List[Dict]) -> None:
+    payload = f'{metric} {data} {datetime.datetime.now()}'
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect(('graphite', 2003))
+    sock.sendall(payload.encode())
+    sock.shutdown(socket.SHUT_WR)
+    while True:
+        data = sock.recv(1024)
+        if len(data) == 0:
+            break
+        logger.debug(f'Received: {data}')
+    sock.close()
 
 
 if __name__ == '__main__':
@@ -74,20 +81,16 @@ if __name__ == '__main__':
         except Exception as err:
             LOGGER.error(f'{type(err).__name__} occurred loading host list!')
             LOGGER.error(f'{err}')
-
         for host, address in hosts.items():
             LOGGER.info(f'Probing {host}@{address}...')
             try:
                 response = requests.get(f'http://{address}')
-                LOGGER.debug('Obtained response from host:') 
+                LOGGER.debug('Obtained response from host...') 
                 LOGGER.debug(response.json())
+                send_to_graphite(host, response.json())
             except Exception as err:
                 LOGGER.error(f'{type(err).__name__} occurred probing {address}')
                 LOGGER.error(f'{err}')
-
-
-            # Add results to mongo
-
         LOGGER.info('Going to sleep...')
         long_sleep(args.period)
 

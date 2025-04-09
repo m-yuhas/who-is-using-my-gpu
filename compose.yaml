@@ -15,7 +15,7 @@ services:
     image: gpu-coordinator
     environment:
       - GPU_LIST=hosts.yaml
-      - PROBE_PERIOD=60
+      - PROBE_PERIOD=1
       - VERBOSITY=debug
     build:
       context: ./coordinator
@@ -25,8 +25,7 @@ services:
     image: graphiteapp/graphite-statsd
     ports:
       - 8080:80
-      - 2003-2004:2003-2004
-      - 2023-2024:2023-2024
+      - 2003:2003
       - 8125:8125/udp
       - 8126:8126
     volumes:
