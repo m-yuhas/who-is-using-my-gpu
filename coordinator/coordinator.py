@@ -5,13 +5,11 @@ import argparse
 import datetime
 import json
 import logging
-import socket
 import time
 
 
 import coloredlogs
-import mysql.connector
-import pymongo
+import mariadb
 import requests
 import yaml
 
@@ -33,37 +31,49 @@ def long_sleep(t: int) -> None:
         rest = (end - time.time()) // 2
 
 
-def to_sqldb(data) -> None:
-    cnx = mysql.connector.connect(
+def log_stats(host, gpu_data, proc_data, timestamp) -> None:
+    connection = mariadb.connect(
         host='mysql',
         port=3306,
-        user='foo',
+        user='coordinator',
         password='bar',
+        database='gpu_db',
     )
-    cur = cnx.cursor()
-    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    gpuid = data['gpus'][0]['id']
-    gputype = data['gpus'][0]['type']
-    fan = data['gpus'][0]['fan_speed']
-    temperature = data['gpus'][0]['temperature']
-    mode = data['gpus'][0]['mode']
-    powerused = data['gpus'][0]['power_used']
-    power_total = data['gpus'][0]['power_total']
-    memoryused = data['gpus'][0]['memory_used']
-    memorytotal = data['gpus'][0]['memory_total']
-    proc = str(data['procs']).replace('"','\\"').replace("'", "\\'")
-    cur.execute("INSERT INTO gpustats VALUES ('{timestamp}', 'anaconda', '{gpuid}', '{gputype}', '{fan}', '{temperature}', '{mode}', '{powerused}', '{power_total}', '{memoryused}', '{memorytotal}', '{proc}')")
-    out = cur.fetchone()
-    LOGGER.debug(f'SQL: {out}')
-    cnx.close()
+    cursor = connection.cursor()
+    cursor.execute(
+        "INSERT INTO gpu_stats VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            timestamp,
+            host,
+            gpu_data['id'],
+            gpu_data['type'],
+            gpu_data['fan_speed'],
+            gpu_data['temperature'],
+            gpu_data['mode'],
+            gpu_data['power_used'] / 1e3,
+            gpu_data['power_total'] / 1e3,
+            gpu_data['memory_used'] / 2 ** 20,
+            gpu_data['memory_total'] / 2 ** 20,
+            json.dumps([p for p in proc_data if p['gpu'] == gpu_data['id']])
+        )
+    )
+    connection.close() #TODO: try-finally this
 
-def send_to_graphite(metric: str, data: List[Dict]) -> None:
-    payload = f'{metric} {data} {int(time.time())}\n'
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(('graphite', 2003))
-    sock.sendall(payload.encode())
-    sock.shutdown(socket.SHUT_WR)
-    sock.close()
+
+def log_errors(host, error_data) -> None:
+    connection = mariadb.connect(
+        host='mysql',
+        port=3306,
+        user='coordinator',
+        password='bar',
+        database='gpu_db',
+    )
+    cursor = connection.cursor()
+    cursor.execute(
+        'INSERT INTO errors VALUES (?, ?, ?)',
+        (timestamp, host, json.dumps(error_data))
+    )
+    connection.close()
 
 
 if __name__ == '__main__':
@@ -107,8 +117,11 @@ if __name__ == '__main__':
                 response = requests.get(f'http://{address}')
                 LOGGER.debug('Obtained response from host...') 
                 LOGGER.debug(response.json())
-                #send_to_graphite(host, response.json())
-                to_sqldb(response.json())
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                for gpu in response.json()['gpus']:
+                    log_stats(host, gpu, response.json()['procs'], timestamp)
+                if len(response.json()['errors']) > 0:
+                    log_errors(host, gpu, timestamp)
             except Exception as err:
                 LOGGER.error(f'{type(err).__name__} occurred probing {address}')
                 LOGGER.error(f'{err}')

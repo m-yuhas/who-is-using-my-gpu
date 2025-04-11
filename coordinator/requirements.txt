@@ -1,5 +1,4 @@
 coloredlogs
-mysql-connector-python
+mariadb
 pyyaml
-pymongo
 requests
