@@ -1,4 +1,6 @@
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+ARG CUDA_VERSION=12.4.1
+
+FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04
 
 RUN apt-get update && apt-get install -y \
   python3 \
@@ -13,4 +15,3 @@ COPY . .
 
 CMD [ "flask", "--app", "monitor", "run", "--host=0.0.0.0" ]
 
-# TODO: Parameterize CUDA Driver Version

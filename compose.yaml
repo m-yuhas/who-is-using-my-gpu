@@ -10,6 +10,8 @@ services:
       - /proc:/proc
       - /etc:/etc
     build:
+      args:
+        - CUDA_VERSION=12.6.3
       context: ./monitor
   coordinator:
     image: gpu-coordinator
