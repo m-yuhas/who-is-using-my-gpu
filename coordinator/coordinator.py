@@ -33,7 +33,7 @@ def long_sleep(t: int) -> None:
 
 def log_stats(host, gpu_data, proc_data, timestamp) -> None:
     connection = mariadb.connect(
-        host='mysql',
+        host='mariadb',
         port=3306,
         user='coordinator',
         password='bar',
@@ -57,12 +57,13 @@ def log_stats(host, gpu_data, proc_data, timestamp) -> None:
             json.dumps([p for p in proc_data if p['gpu'] == gpu_data['id']])
         )
     )
+    connection.commit()
     connection.close() #TODO: try-finally this
 
 
 def log_errors(host, error_data) -> None:
     connection = mariadb.connect(
-        host='mysql',
+        host='mariadb',
         port=3306,
         user='coordinator',
         password='bar',
@@ -73,6 +74,7 @@ def log_errors(host, error_data) -> None:
         'INSERT INTO errors VALUES (?, ?, ?)',
         (timestamp, host, json.dumps(error_data))
     )
+    connection.commit()
     connection.close()
 
 

@@ -21,39 +21,16 @@ services:
       context: ./coordinator
       args:
         GPU_LIST: hosts.yaml
-#  graphite:
-#    image: graphiteapp/graphite-statsd
-#    ports:
-#      - 8080:80
-#      - 2003:2003
-#      - 8125:8125/udp
-#      - 8126:8126
-#    volumes:
-#      - ./data/graphite:/opt/graphite/storage/whisper
-#  mysql:
-#    image: mysql:9.2.0
-#    ports:
-#      - 3306:3306
-#    command: --init-file /data/application/init.sql
-#    volumes:
-#      - ./mysql/init.sql:/data/application/init.sql
-#      - ./data/mysql:/var/lib/mysql
-#    environment:
-#      MYSQL_ROOT_USER: root
-#      MYSQL_ROOT_PASSWORD: root
-#      MYSQL_DATABASE: gpustats
-#      MYSQL_USER: foo
-#      MYSQL_PASSWORD: bar
-  mysql:
+  mariadb:
     image: mariadb:11.8.1-ubi9-rc
+    user: '0'
     ports:
       - 3306:3306
     command: --init-file /data/application/init.sql
     volumes:
-      - ./mysql/init.sql:/data/application/init.sql
-      - ./data/mysql:/var/lib/mysql
+      - ./mariadb/init.sql:/data/application/init.sql
+      - ./data/mariadb:/var/lib/mysql
     environment:
-#      MARIADB_ROOT_USER: root
       MARIADB_ROOT_PASSWORD: root
   grafana:
     image: grafana/grafana-oss
