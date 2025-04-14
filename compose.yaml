@@ -9,6 +9,7 @@ services:
     volumes:
       - /proc:/proc
       - /etc:/etc
+    pid: host
     build:
       args:
         - CUDA_VERSION=12.6.3
